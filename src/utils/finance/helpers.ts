@@ -42,6 +42,7 @@ export const formatCurrency = (amount: number): string => {
     currency: 'INR',
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
+    notation: 'standard' // Ensures standard notation without superscript
   }).format(amount);
 };
 
