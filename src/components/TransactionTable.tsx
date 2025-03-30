@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
 import { IncomeData, ExpenseData, formatCurrency } from '@/utils/finance';
 import { Input } from '@/components/ui/input';
@@ -6,6 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { ChevronDown, ChevronUp, Search } from 'lucide-react';
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 
 interface TransactionTableProps {
   incomeData: IncomeData[];
@@ -227,49 +229,81 @@ const TransactionTable: React.FC<TransactionTableProps> = ({ incomeData, expense
           <div className="text-sm text-muted-foreground">
             Showing {startIndex + 1}-{Math.min(startIndex + itemsPerPage, filteredTransactions.length)} of {filteredTransactions.length} transactions
           </div>
-          <div className="flex gap-1">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-              disabled={currentPage === 1}
-            >
-              Previous
-            </Button>
-            {totalPages <= 5 ? (
-              pageButtons
-            ) : (
-              <>
-                {currentPage > 1 && (
-                  <Button variant="outline" size="sm" onClick={() => setCurrentPage(1)}>
-                    1
-                  </Button>
-                )}
-                {currentPage > 2 && <div className="px-2 py-1">...</div>}
-                
-                {currentPage > 1 && currentPage < totalPages && (
-                  <Button variant="default" size="sm">
-                    {currentPage}
-                  </Button>
-                )}
-                
-                {currentPage < totalPages - 1 && <div className="px-2 py-1">...</div>}
-                {currentPage < totalPages && (
-                  <Button variant="outline" size="sm" onClick={() => setCurrentPage(totalPages)}>
-                    {totalPages}
-                  </Button>
-                )}
-              </>
-            )}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-              disabled={currentPage === totalPages}
-            >
-              Next
-            </Button>
-          </div>
+          
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious 
+                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                  className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
+                />
+              </PaginationItem>
+              
+              {totalPages <= 5 ? (
+                // Show all page numbers if there are 5 or fewer pages
+                Array.from({ length: totalPages }).map((_, i) => (
+                  <PaginationItem key={i + 1}>
+                    <PaginationLink 
+                      isActive={currentPage === i + 1}
+                      onClick={() => setCurrentPage(i + 1)}
+                    >
+                      {i + 1}
+                    </PaginationLink>
+                  </PaginationItem>
+                ))
+              ) : (
+                // Show limited page numbers with ellipsis for many pages
+                <>
+                  {currentPage > 1 && (
+                    <PaginationItem>
+                      <PaginationLink onClick={() => setCurrentPage(1)}>
+                        1
+                      </PaginationLink>
+                    </PaginationItem>
+                  )}
+                  
+                  {currentPage > 2 && (
+                    <PaginationItem>
+                      <PaginationLink className="cursor-default">
+                        …
+                      </PaginationLink>
+                    </PaginationItem>
+                  )}
+                  
+                  {currentPage > 1 && currentPage < totalPages && (
+                    <PaginationItem>
+                      <PaginationLink isActive>
+                        {currentPage}
+                      </PaginationLink>
+                    </PaginationItem>
+                  )}
+                  
+                  {currentPage < totalPages - 1 && (
+                    <PaginationItem>
+                      <PaginationLink className="cursor-default">
+                        …
+                      </PaginationLink>
+                    </PaginationItem>
+                  )}
+                  
+                  {currentPage < totalPages && (
+                    <PaginationItem>
+                      <PaginationLink onClick={() => setCurrentPage(totalPages)}>
+                        {totalPages}
+                      </PaginationLink>
+                    </PaginationItem>
+                  )}
+                </>
+              )}
+              
+              <PaginationItem>
+                <PaginationNext 
+                  onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                  className={currentPage === totalPages ? "pointer-events-none opacity-50" : ""}
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
         </div>
       )}
     </div>
