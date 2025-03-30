@@ -11,7 +11,8 @@ import {
   getTopSpendingCategories,
   getNotableTransactions,
   getYearlySummary,
-  filterByDateRange,
+  filterIncomeByDateRange,
+  filterExpensesByDateRange,
 } from './finance';
 
 export const generateReport = (
@@ -23,8 +24,8 @@ export const generateReport = (
   const startDate = new Date(year, 0, 1);
   const endDate = new Date(year, 11, 31, 23, 59, 59);
   
-  const yearIncomeData = filterByDateRange(incomeData, startDate, endDate);
-  const yearExpenseData = filterByDateRange(expenseData, startDate, endDate);
+  const yearIncomeData = filterIncomeByDateRange(incomeData, startDate, endDate);
+  const yearExpenseData = filterExpensesByDateRange(expenseData, startDate, endDate);
   
   // Initialize PDF document
   const doc = new jsPDF();
@@ -202,13 +203,14 @@ export const generateReport = (
   // Expense transactions (on a new page if needed)
   const incomeAllTableEndY = (doc as any).lastAutoTable.finalY + 15;
   
+  let startY: number;
   if (incomeAllTableEndY > doc.internal.pageSize.height - 40) {
     doc.addPage();
     addSectionTitle(`All Expense Transactions (${year})`, 20);
-    var startY = 30;
+    startY = 30;
   } else {
     addSectionTitle(`All Expense Transactions (${year})`, incomeAllTableEndY);
-    var startY = incomeAllTableEndY + 10;
+    startY = incomeAllTableEndY + 10;
   }
   
   const allExpenseData = yearExpenseData.map((item, index) => [

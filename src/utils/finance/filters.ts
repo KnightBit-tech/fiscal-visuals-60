@@ -16,6 +16,34 @@ export const filterByDateRange = (
 };
 
 /**
+ * Filter income data by date range (type-safe version)
+ */
+export const filterIncomeByDateRange = (
+  data: IncomeData[],
+  startDate: Date,
+  endDate: Date
+): IncomeData[] => {
+  return data.filter(item => {
+    const itemDate = item.Date;
+    return itemDate >= startDate && itemDate <= endDate;
+  });
+};
+
+/**
+ * Filter expense data by date range (type-safe version)
+ */
+export const filterExpensesByDateRange = (
+  data: ExpenseData[],
+  startDate: Date,
+  endDate: Date
+): ExpenseData[] => {
+  return data.filter(item => {
+    const itemDate = item.Date;
+    return itemDate >= startDate && itemDate <= endDate;
+  });
+};
+
+/**
  * Filter expenses by category
  */
 export const filterExpensesByCategory = (
