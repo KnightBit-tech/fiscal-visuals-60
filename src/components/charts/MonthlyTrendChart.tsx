@@ -1,8 +1,7 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { IncomeData, ExpenseData, groupByMonth } from '@/utils/finance';
+import { IncomeData, ExpenseData, groupByMonth, formatCurrency } from '@/utils/finance';
 
 interface MonthlyTrendChartProps {
   incomeData: IncomeData[];
@@ -20,7 +19,19 @@ const MonthlyTrendChart: React.FC<MonthlyTrendChartProps> = ({ incomeData, expen
     ...Object.keys(expensesByMonth),
   ]);
 
-  const sortedMonths = Array.from(allMonths).sort();
+  // Sort months chronologically
+  const sortedMonths = Array.from(allMonths).sort((a, b) => {
+    // Format: YYYY-MM
+    const [yearA, monthA] = a.split('-').map(Number);
+    const [yearB, monthB] = b.split('-').map(Number);
+    
+    // Compare years first
+    if (yearA !== yearB) {
+      return yearA - yearB;
+    }
+    // Then compare months
+    return monthA - monthB;
+  });
 
   const chartData = sortedMonths.map(month => {
     const [year, monthNum] = month.split('-');
@@ -31,17 +42,10 @@ const MonthlyTrendChart: React.FC<MonthlyTrendChartProps> = ({ incomeData, expen
       income: incomeByMonth[month] || 0,
       expenses: expensesByMonth[month] || 0,
       savings: (incomeByMonth[month] || 0) - (expensesByMonth[month] || 0),
+      // Keep the original string for sorting
+      originalMonth: month
     };
   });
-
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(value);
-  };
 
   return (
     <Card className="animate-slide-in" style={{ animationDelay: '0.3s' }}>

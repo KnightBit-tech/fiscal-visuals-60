@@ -1,5 +1,4 @@
-
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { IncomeData, ExpenseData, formatCurrency } from '@/utils/finance';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -100,6 +99,13 @@ const TransactionTable: React.FC<TransactionTableProps> = ({ incomeData, expense
     });
   }, [filteredTransactions, sortField, sortDirection]);
 
+  // Initial sort when component mounts or data changes
+  useEffect(() => {
+    // Default sort by date descending
+    setSortField('date');
+    setSortDirection('desc');
+  }, [incomeData, expenseData]);
+
   // Calculate pagination values
   const totalPages = Math.ceil(sortedTransactions.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -115,23 +121,8 @@ const TransactionTable: React.FC<TransactionTableProps> = ({ incomeData, expense
     }
   };
 
-  // Create pagination controls
-  const pageButtons = [];
-  for (let i = 1; i <= totalPages; i++) {
-    pageButtons.push(
-      <Button
-        key={i}
-        variant={currentPage === i ? 'default' : 'outline'}
-        size="sm"
-        onClick={() => setCurrentPage(i)}
-      >
-        {i}
-      </Button>
-    );
-  }
-
   // Reset to first page when filters change
-  React.useEffect(() => {
+  useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery, typeFilter, sortField, sortDirection]);
 

@@ -1,8 +1,10 @@
+
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { IncomeData, ExpenseData, getCashFlowData, formatCurrency } from '@/utils/dataProcessing';
-import { format, parse } from 'date-fns';
+import { IncomeData, ExpenseData } from '@/utils/finance/types';
+import { formatCurrency, groupByMonth } from '@/utils/finance';
+import { format } from 'date-fns';
 
 interface CashFlowChartProps {
   incomeData: IncomeData[];
@@ -10,10 +12,44 @@ interface CashFlowChartProps {
 }
 
 const CashFlowChart: React.FC<CashFlowChartProps> = ({ incomeData, expenseData }) => {
-  const cashFlowData = getCashFlowData(incomeData, expenseData);
+  // Group data by month
+  const incomeByMonth = groupByMonth(incomeData);
+  const expensesByMonth = groupByMonth(expenseData);
+  
+  // Get all unique months
+  const allMonths = new Set([
+    ...Object.keys(incomeByMonth),
+    ...Object.keys(expensesByMonth),
+  ]);
+  
+  // Calculate cash flow for each month
+  const cashFlowData = Array.from(allMonths).map(month => {
+    const income = incomeByMonth[month] || 0;
+    const expenses = expensesByMonth[month] || 0;
+    const cashFlow = income - expenses;
+    
+    return {
+      date: month, // YYYY-MM format
+      cashFlow
+    };
+  });
+  
+  // Sort data chronologically by date
+  const sortedData = cashFlowData.sort((a, b) => {
+    // Format: YYYY-MM
+    const [yearA, monthA] = a.date.split('-').map(Number);
+    const [yearB, monthB] = b.date.split('-').map(Number);
+    
+    // Compare years first
+    if (yearA !== yearB) {
+      return yearA - yearB;
+    }
+    // Then compare months
+    return monthA - monthB;
+  });
   
   // Format data for the chart
-  const chartData = cashFlowData.map(item => {
+  const chartData = sortedData.map(item => {
     const [year, month] = item.date.split('-');
     const dateObj = new Date(parseInt(year), parseInt(month) - 1);
     
@@ -23,9 +59,6 @@ const CashFlowChart: React.FC<CashFlowChartProps> = ({ incomeData, expenseData }
       // Keep raw date for sorting
       rawDate: item.date
     };
-  }).sort((a, b) => {
-    // Sort by date
-    return a.rawDate.localeCompare(b.rawDate);
   });
 
   // Custom tooltip formatter

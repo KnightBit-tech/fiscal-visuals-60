@@ -44,9 +44,11 @@ const CumulativeSavingsChart: React.FC<CumulativeSavingsChartProps> = ({
     return {
       month: new Date(year, i).toLocaleString('default', { month: 'short' }),
       cumulativeSavings,
-      monthlySavings
+      monthlySavings,
+      // Add a sortKey to ensure months are displayed in order
+      sortKey: i
     };
-  });
+  }).sort((a, b) => a.sortKey - b.sortKey); // Ensure chronological order
 
   return (
     <Card className="animate-slide-in" style={{ animationDelay: '0.3s' }}>

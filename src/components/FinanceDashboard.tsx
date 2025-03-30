@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -81,6 +81,11 @@ const FinanceDashboard: React.FC<FinanceDashboardProps> = ({ incomeData, expense
     { value: '11', label: 'December' },
   ];
 
+  // Initialize filters on first load
+  useEffect(() => {
+    applyFilters('all', 'all');
+  }, [incomeData, expenseData]);
+
   // Handle category click from pie chart
   const handleCategoryClick = (category: string) => {
     setSelectedCategory(category);
@@ -94,15 +99,14 @@ const FinanceDashboard: React.FC<FinanceDashboardProps> = ({ incomeData, expense
     setSearchQuery(query);
     
     if (!query) {
-      setFilteredExpenses(expenseData);
-      setFilteredIncomes(incomeData);
+      applyFilters(selectedYear, selectedMonth);
       return;
     }
     
     const lowercaseQuery = query.toLowerCase();
     
     // Filter expenses
-    const filteredExp = expenseData.filter((expense) => {
+    const filteredExp = filteredExpenses.filter((expense) => {
       return (
         expense.Name.toLowerCase().includes(lowercaseQuery) ||
         expense.Categories.toLowerCase().includes(lowercaseQuery) ||
@@ -111,7 +115,7 @@ const FinanceDashboard: React.FC<FinanceDashboardProps> = ({ incomeData, expense
     });
     
     // Filter incomes
-    const filteredInc = incomeData.filter((income) => {
+    const filteredInc = filteredIncomes.filter((income) => {
       return (
         income.Name.toLowerCase().includes(lowercaseQuery) ||
         income.Sources.toLowerCase().includes(lowercaseQuery)
@@ -187,8 +191,7 @@ const FinanceDashboard: React.FC<FinanceDashboardProps> = ({ incomeData, expense
     setSearchQuery('');
     setSelectedYear('all');
     setSelectedMonth('all');
-    setFilteredExpenses(expenseData);
-    setFilteredIncomes(incomeData);
+    applyFilters('all', 'all');
   };
 
   // Handle report generation
