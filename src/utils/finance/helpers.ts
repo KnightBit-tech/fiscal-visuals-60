@@ -1,4 +1,4 @@
-
+import { Intl } from 'next/dist/compiled/@formatjs/intl';
 import { IncomeData, ExpenseData } from './types';
 
 /**
@@ -42,7 +42,8 @@ export const formatCurrency = (amount: number): string => {
     currency: 'INR',
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
-    notation: 'standard' // Ensures standard notation without superscript
+    currencyDisplay: 'symbol', // Ensure symbol is displayed normally
+    notation: 'standard' // Explicitly set to standard notation
   }).format(amount);
 };
 
