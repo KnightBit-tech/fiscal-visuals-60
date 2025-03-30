@@ -1,6 +1,6 @@
 
 import { jsPDF } from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 import { 
   IncomeData, 
   ExpenseData, 
@@ -12,13 +12,6 @@ import {
   getNotableTransactions,
   getYearlySummary,
 } from './finance';
-
-// Add types for jsPDF-autotable
-declare module 'jspdf' {
-  interface jsPDF {
-    autoTable: (options: any) => jsPDF;
-  }
-}
 
 export const generateReport = (incomeData: IncomeData[], expenseData: ExpenseData[]): void => {
   // Initialize PDF document
@@ -64,7 +57,7 @@ export const generateReport = (incomeData: IncomeData[], expenseData: ExpenseDat
     `${((cat.amount / totalExpenses) * 100).toFixed(1)}%`
   ]);
   
-  doc.autoTable({
+  autoTable(doc, {
     startY: 100,
     head: [['Category', 'Amount', 'Percentage']],
     body: topCategoriesData,
@@ -86,7 +79,7 @@ export const generateReport = (incomeData: IncomeData[], expenseData: ExpenseDat
     item.formattedDate || new Date(item.Date).toLocaleDateString()
   ]);
   
-  doc.autoTable({
+  autoTable(doc, {
     startY: tableEndY + 20,
     head: [['Name', 'Source', 'Amount', 'Date']],
     body: topIncomeData,
@@ -105,7 +98,7 @@ export const generateReport = (incomeData: IncomeData[], expenseData: ExpenseDat
     item.formattedDate || new Date(item.Date).toLocaleDateString()
   ]);
   
-  doc.autoTable({
+  autoTable(doc, {
     startY: incomeTableEndY + 5,
     head: [['Name', 'Category', 'Amount', 'Date']],
     body: topExpenseData,
@@ -127,7 +120,7 @@ export const generateReport = (incomeData: IncomeData[], expenseData: ExpenseDat
     item.income > 0 ? ((item.income - item.expenses) / item.income * 100).toFixed(1) + '%' : 'N/A'
   ]);
   
-  doc.autoTable({
+  autoTable(doc, {
     startY: 30,
     head: [['Year', 'Income', 'Expenses', 'Savings', 'Savings Rate']],
     body: yearlyData,
@@ -170,7 +163,7 @@ export const generateReport = (incomeData: IncomeData[], expenseData: ExpenseDat
     ];
   });
   
-  doc.autoTable({
+  autoTable(doc, {
     startY: yearlyTableEndY + 10,
     head: [['Month', 'Income', 'Expenses', 'Savings', 'Savings Rate']],
     body: monthlyData,

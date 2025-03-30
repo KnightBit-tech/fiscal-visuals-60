@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { IncomeData, ExpenseData, groupByMonth } from '@/utils/dataProcessing';
+import { IncomeData, ExpenseData, groupByMonth } from '@/utils/finance';
 
 interface MonthlyTrendChartProps {
   incomeData: IncomeData[];
@@ -49,7 +49,7 @@ const MonthlyTrendChart: React.FC<MonthlyTrendChartProps> = ({ incomeData, expen
         <CardTitle>Monthly Income & Expense Trends</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="h-80">
+        <div className="h-[400px]"> {/* Increased height for better visibility */}
           <ResponsiveContainer width="100%" height="100%">
             <LineChart
               data={chartData}
@@ -61,13 +61,27 @@ const MonthlyTrendChart: React.FC<MonthlyTrendChartProps> = ({ incomeData, expen
               }}
             >
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="month" />
-              <YAxis tickFormatter={formatCurrency} />
+              <XAxis 
+                dataKey="month" 
+                tick={{ fontSize: 12 }}
+                height={50}
+                tickMargin={10}
+              />
+              <YAxis 
+                tickFormatter={formatCurrency} 
+                tick={{ fontSize: 12 }}
+                width={80}
+              />
               <Tooltip 
                 formatter={(value: number) => [formatCurrency(value), '']}
                 contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.9)', borderRadius: '8px' }}
+                labelStyle={{ fontWeight: 'bold' }}
               />
-              <Legend />
+              <Legend 
+                verticalAlign="top" 
+                height={36}
+                wrapperStyle={{ paddingTop: '10px' }}
+              />
               <Line
                 type="monotone"
                 dataKey="income"

@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { IncomeData, ExpenseData, filterExpensesByCategory, formatCurrency } from '@/utils/dataProcessing';
+import { IncomeData, ExpenseData, filterExpensesByCategory, formatCurrency } from '@/utils/finance';
 import IncomeVsExpenseChart from './charts/IncomeVsExpenseChart';
 import ExpensePieChart from './charts/ExpensePieChart';
 import MonthlyTrendChart from './charts/MonthlyTrendChart';
@@ -11,6 +11,7 @@ import TopSpendingChart from './charts/TopSpendingChart';
 import CashFlowChart from './charts/CashFlowChart';
 import YearlySummaryChart from './charts/YearlySummaryChart';
 import DailySpendingCalendar from './charts/DailySpendingCalendar';
+import TransactionTable from './TransactionTable';
 import { CalendarDays, Download, Filter, Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -297,6 +298,7 @@ const FinanceDashboard: React.FC<FinanceDashboardProps> = ({ incomeData, expense
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="details">Detailed Analysis</TabsTrigger>
           <TabsTrigger value="yearly">Yearly & Cash Flow</TabsTrigger>
+          <TabsTrigger value="transactions">Transactions</TabsTrigger>
         </TabsList>
         
         <TabsContent value="overview" className="space-y-6">
@@ -312,6 +314,10 @@ const FinanceDashboard: React.FC<FinanceDashboardProps> = ({ incomeData, expense
               incomeData={incomeData} 
               expenseData={selectedCategory ? filteredExpenses : expenseData} 
             />
+          </div>
+          
+          {/* Monthly Trend Chart in its own row at full width */}
+          <div className="grid grid-cols-1 gap-6">
             <MonthlyTrendChart 
               incomeData={incomeData} 
               expenseData={selectedCategory ? filteredExpenses : expenseData} 
@@ -333,21 +339,6 @@ const FinanceDashboard: React.FC<FinanceDashboardProps> = ({ incomeData, expense
               </CardContent>
             </Card>
           </div>
-          
-          {/* Placeholder for transaction table or additional reports */}
-          <Card className="animate-slide-in" style={{ animationDelay: '0.6s' }}>
-            <CardContent className="p-6">
-              <h3 className="font-medium mb-2">Transaction Details</h3>
-              <p className="text-muted-foreground mb-4">
-                Showing {filteredExpenses.length} of {expenseData.length} transactions
-              </p>
-              <div className="border rounded-md p-4 text-center">
-                <p className="text-muted-foreground">
-                  Detailed transaction view will be available in the next update.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
         </TabsContent>
         
         <TabsContent value="yearly" className="space-y-6">
@@ -361,6 +352,13 @@ const FinanceDashboard: React.FC<FinanceDashboardProps> = ({ incomeData, expense
               expenseData={expenseData} 
             />
           </div>
+        </TabsContent>
+        
+        <TabsContent value="transactions" className="space-y-6">
+          <TransactionTable 
+            incomeData={incomeData} 
+            expenseData={expenseData} 
+          />
         </TabsContent>
       </Tabs>
     </div>
