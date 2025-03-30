@@ -1,4 +1,5 @@
-import { Intl } from 'next/dist/compiled/@formatjs/intl';
+
+// Import types only, not Intl
 import { IncomeData, ExpenseData } from './types';
 
 /**
