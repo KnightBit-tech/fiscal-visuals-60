@@ -35,17 +35,16 @@ export const parseCurrency = (amountStr: string): number => {
 /**
  * Format currency in Rupees
  * @param amount Numeric amount
- * @param includeCurrencySymbol Whether to include the currency symbol (default: true)
  * @returns Formatted string in Rupees
  */
-export const formatCurrency = (amount: number, includeCurrencySymbol: boolean = true): string => {
+export const formatCurrency = (amount: number): string => {
   return new Intl.NumberFormat('en-IN', {
-    style: includeCurrencySymbol ? 'currency' : 'decimal',
+    style: 'currency',
     currency: 'INR',
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
-    currencyDisplay: 'symbol',
-    notation: 'standard'
+    currencyDisplay: 'symbol', // Ensure symbol is displayed normally
+    notation: 'standard' // Explicitly set to standard notation
   }).format(amount);
 };
 

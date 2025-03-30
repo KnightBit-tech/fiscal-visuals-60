@@ -36,9 +36,6 @@ export const generateReport = (
   const notableTransactions = getNotableTransactions(yearIncomeData, yearExpenseData);
   const yearlySummary = getYearlySummary(incomeData, expenseData);
 
-  // Format currency without symbol for reports
-  const formatAmount = (amount: number): string => formatCurrency(amount, false);
-
   // Helper function to add a section title
   const addSectionTitle = (text: string, y: number) => {
     doc.setFontSize(16);
@@ -60,16 +57,16 @@ export const generateReport = (
   // Add summary section
   addSectionTitle('Summary', 40);
   doc.setFontSize(12);
-  doc.text(`Total Income: ${formatAmount(totalIncome)}`, 20, 50);
-  doc.text(`Total Expenses: ${formatAmount(totalExpenses)}`, 20, 58);
-  doc.text(`Net Savings: ${formatAmount(netSavings)}`, 20, 66);
+  doc.text(`Total Income: ${formatCurrency(totalIncome)}`, 20, 50);
+  doc.text(`Total Expenses: ${formatCurrency(totalExpenses)}`, 20, 58);
+  doc.text(`Net Savings: ${formatCurrency(netSavings)}`, 20, 66);
   doc.text(`Savings Rate: ${totalIncome > 0 ? ((netSavings / totalIncome) * 100).toFixed(1) + '%' : 'N/A'}`, 20, 74);
 
   // Add top spending categories section
   addSectionTitle('Top Spending Categories', 90);
   const topCategoriesData = topCategories.map((cat, index) => [
     `${index + 1}. ${cat.category}`,
-    formatAmount(cat.amount),
+    formatCurrency(cat.amount),
     `${((cat.amount / totalExpenses) * 100).toFixed(1)}%`
   ]);
   
@@ -91,7 +88,7 @@ export const generateReport = (
   const topIncomeData = notableTransactions.topIncome.map((item, index) => [
     `${index + 1}. ${item.Name}`,
     item.Sources,
-    formatAmount(item.Amount),
+    formatCurrency(item.Amount),
     item.formattedDate || new Date(item.Date).toLocaleDateString()
   ]);
   
@@ -110,7 +107,7 @@ export const generateReport = (
   const topExpenseData = notableTransactions.topExpenses.map((item, index) => [
     `${index + 1}. ${item.Name}`,
     item.Categories,
-    formatAmount(item.Amount),
+    formatCurrency(item.Amount),
     item.formattedDate || new Date(item.Date).toLocaleDateString()
   ]);
   
@@ -130,9 +127,9 @@ export const generateReport = (
   addSectionTitle('Yearly Summary', 20);
   const yearlyData = yearlySummary.map(item => [
     item.year.toString(),
-    formatAmount(item.income),
-    formatAmount(item.expenses),
-    formatAmount(item.income - item.expenses),
+    formatCurrency(item.income),
+    formatCurrency(item.expenses),
+    formatCurrency(item.income - item.expenses),
     item.income > 0 ? ((item.income - item.expenses) / item.income * 100).toFixed(1) + '%' : 'N/A'
   ]);
   
@@ -165,9 +162,9 @@ export const generateReport = (
     
     return [
       new Date(year, i).toLocaleString('default', { month: 'long' }),
-      formatAmount(monthIncome),
-      formatAmount(monthExpenses),
-      formatAmount(savings),
+      formatCurrency(monthIncome),
+      formatCurrency(monthExpenses),
+      formatCurrency(savings),
       savingsRate
     ];
   });
@@ -190,7 +187,7 @@ export const generateReport = (
     `${index + 1}`,
     item.Name,
     item.Sources,
-    formatAmount(item.Amount),
+    formatCurrency(item.Amount),
     item.formattedDate || new Date(item.Date).toLocaleDateString()
   ]);
   
@@ -220,7 +217,7 @@ export const generateReport = (
     `${index + 1}`,
     item.Name,
     item.Categories,
-    formatAmount(item.Amount),
+    formatCurrency(item.Amount),
     item.formattedDate || new Date(item.Date).toLocaleDateString(),
     item.Notes
   ]);
