@@ -11,7 +11,7 @@ import {
   getTopSpendingCategories,
   getNotableTransactions,
   getYearlySummary,
-} from './dataProcessing';
+} from './finance';
 
 // Add types for jsPDF-autotable
 declare module 'jspdf' {

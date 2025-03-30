@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { IncomeData, ExpenseData, getYearlySummary, formatCurrency } from '@/utils/dataProcessing';
+import { IncomeData, ExpenseData, getYearlySummary, formatCurrency } from '@/utils/finance';
 
 interface YearlySummaryChartProps {
   incomeData: IncomeData[];
