@@ -51,6 +51,20 @@ export const parseCurrency = (amountStr: string): number => {
 };
 
 /**
+ * Format currency in Rupees
+ * @param amount Numeric amount
+ * @returns Formatted string in Rupees
+ */
+export const formatCurrency = (amount: number): string => {
+  return new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount);
+};
+
+/**
  * Parse date string to Date object
  * @param dateStr Date as string
  * @returns Date object
@@ -170,6 +184,18 @@ export const groupByMonth = (data: (IncomeData | ExpenseData)[]): Record<string,
 };
 
 /**
+ * Group data by date for heatmap calendar
+ */
+export const groupByDate = (data: (IncomeData | ExpenseData)[]): Record<string, number> => {
+  return data.reduce((grouped, item) => {
+    const date = item.Date;
+    const dateStr = date.toISOString().split('T')[0]; // YYYY-MM-DD format
+    grouped[dateStr] = (grouped[dateStr] || 0) + item.Amount;
+    return grouped;
+  }, {} as Record<string, number>);
+};
+
+/**
  * Filter data by date range
  */
 export const filterByDateRange = (
@@ -237,4 +263,100 @@ export const getTopSpendingCategories = (
     .map(([category, amount]) => ({ category, amount }))
     .sort((a, b) => b.amount - a.amount)
     .slice(0, limit);
+};
+
+/**
+ * Get daily spending data for calendar heatmap
+ */
+export const getDailySpendingData = (
+  expenseData: ExpenseData[],
+  startDate: Date = new Date(new Date().getFullYear(), 0, 1),
+  endDate: Date = new Date()
+): { date: Date; amount: number }[] => {
+  const filteredData = filterByDateRange(expenseData, startDate, endDate);
+  const dateMap = groupByDate(filteredData);
+  
+  return Object.entries(dateMap).map(([dateStr, amount]) => ({
+    date: new Date(dateStr),
+    amount
+  }));
+};
+
+/**
+ * Get cash flow data (income - expenses) over time
+ */
+export const getCashFlowData = (
+  incomeData: IncomeData[],
+  expenseData: ExpenseData[]
+): { date: string; cashFlow: number }[] => {
+  const incomeByMonth = groupByMonth(incomeData);
+  const expensesByMonth = groupByMonth(expenseData);
+  
+  // Get all unique months
+  const allMonths = [...new Set([
+    ...Object.keys(incomeByMonth),
+    ...Object.keys(expensesByMonth)
+  ])].sort();
+  
+  return allMonths.map(month => {
+    const income = incomeByMonth[month] || 0;
+    const expenses = expensesByMonth[month] || 0;
+    return {
+      date: month,
+      cashFlow: income - expenses
+    };
+  });
+};
+
+/**
+ * Get yearly summary data for comparison
+ */
+export const getYearlySummary = (
+  incomeData: IncomeData[],
+  expenseData: ExpenseData[]
+): { year: number; income: number; expenses: number }[] => {
+  // Group income by year
+  const incomeByYear = incomeData.reduce((grouped, item) => {
+    const year = item.year || new Date().getFullYear();
+    grouped[year] = (grouped[year] || 0) + item.Amount;
+    return grouped;
+  }, {} as Record<number, number>);
+  
+  // Group expenses by year
+  const expensesByYear = expenseData.reduce((grouped, item) => {
+    const year = item.year || new Date().getFullYear();
+    grouped[year] = (grouped[year] || 0) + item.Amount;
+    return grouped;
+  }, {} as Record<number, number>);
+  
+  // Get all unique years
+  const allYears = [...new Set([
+    ...Object.keys(incomeByYear).map(Number),
+    ...Object.keys(expensesByYear).map(Number)
+  ])].sort();
+  
+  return allYears.map(year => ({
+    year,
+    income: incomeByYear[year] || 0,
+    expenses: expensesByYear[year] || 0
+  }));
+};
+
+/**
+ * Get notable transactions (highest income & expenses)
+ */
+export const getNotableTransactions = (
+  incomeData: IncomeData[],
+  expenseData: ExpenseData[],
+  limit: number = 5
+): { topIncome: IncomeData[]; topExpenses: ExpenseData[] } => {
+  const topIncome = [...incomeData]
+    .sort((a, b) => b.Amount - a.Amount)
+    .slice(0, limit);
+    
+  const topExpenses = [...expenseData]
+    .sort((a, b) => b.Amount - a.Amount)
+    .slice(0, limit);
+    
+  return { topIncome, topExpenses };
 };

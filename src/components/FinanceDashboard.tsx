@@ -3,15 +3,20 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { IncomeData, ExpenseData, filterExpensesByCategory } from '@/utils/dataProcessing';
+import { IncomeData, ExpenseData, filterExpensesByCategory, formatCurrency } from '@/utils/dataProcessing';
 import IncomeVsExpenseChart from './charts/IncomeVsExpenseChart';
 import ExpensePieChart from './charts/ExpensePieChart';
 import MonthlyTrendChart from './charts/MonthlyTrendChart';
 import TopSpendingChart from './charts/TopSpendingChart';
-import { Download, Filter, Search } from 'lucide-react';
+import CashFlowChart from './charts/CashFlowChart';
+import YearlySummaryChart from './charts/YearlySummaryChart';
+import DailySpendingCalendar from './charts/DailySpendingCalendar';
+import { CalendarDays, Download, Filter, Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useToast } from '@/hooks/use-toast';
+import generateReport from '@/utils/reportGenerator';
 
 interface FinanceDashboardProps {
   incomeData: IncomeData[];
@@ -24,6 +29,8 @@ const FinanceDashboard: React.FC<FinanceDashboardProps> = ({ incomeData, expense
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedYear, setSelectedYear] = useState<string>('all');
   const [selectedMonth, setSelectedMonth] = useState<string>('all');
+  const [showCalendarView, setShowCalendarView] = useState(false);
+  const { toast } = useToast();
 
   // Get unique years from data
   const years = Array.from(
@@ -133,9 +140,27 @@ const FinanceDashboard: React.FC<FinanceDashboardProps> = ({ incomeData, expense
     setFilteredExpenses(expenseData);
   };
 
-  // Mock function for report generation (to be implemented later)
-  const generateReport = () => {
-    alert('Report generation functionality will be implemented in the next version!');
+  // Handle report generation
+  const handleGenerateReport = () => {
+    try {
+      generateReport(incomeData, expenseData);
+      toast({
+        title: "Report Generated",
+        description: "Your financial report has been downloaded successfully.",
+      });
+    } catch (error) {
+      console.error("Error generating report:", error);
+      toast({
+        title: "Error",
+        description: "There was a problem generating your report. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Toggle calendar view
+  const toggleCalendarView = () => {
+    setShowCalendarView(!showCalendarView);
   };
 
   return (
@@ -143,7 +168,7 @@ const FinanceDashboard: React.FC<FinanceDashboardProps> = ({ incomeData, expense
       {/* Filters and controls */}
       <Card>
         <CardContent className="pt-6">
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
             <div className="space-y-2">
               <Label htmlFor="search">Search Transactions</Label>
               <div className="relative">
@@ -200,9 +225,16 @@ const FinanceDashboard: React.FC<FinanceDashboardProps> = ({ incomeData, expense
             </div>
             
             <div className="flex items-end">
-              <Button onClick={generateReport} className="w-full">
+              <Button onClick={toggleCalendarView} variant="outline" className="w-full">
+                <CalendarDays className="mr-2 h-4 w-4" />
+                {showCalendarView ? 'Hide Calendar' : 'Show Calendar'}
+              </Button>
+            </div>
+            
+            <div className="flex items-end">
+              <Button onClick={handleGenerateReport} className="w-full">
                 <Download className="mr-2 h-4 w-4" />
-                Generate Report
+                Download Report
               </Button>
             </div>
           </div>
@@ -223,29 +255,68 @@ const FinanceDashboard: React.FC<FinanceDashboardProps> = ({ incomeData, expense
         </CardContent>
       </Card>
 
+      {/* Summary Data */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Card>
+          <CardContent className="p-6 flex flex-col items-center justify-center">
+            <p className="text-lg font-medium mb-1">Total Income</p>
+            <p className="text-3xl font-bold">
+              {formatCurrency(incomeData.reduce((sum, item) => sum + item.Amount, 0))}
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-6 flex flex-col items-center justify-center">
+            <p className="text-lg font-medium mb-1">Total Expenses</p>
+            <p className="text-3xl font-bold">
+              {formatCurrency(expenseData.reduce((sum, item) => sum + item.Amount, 0))}
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-6 flex flex-col items-center justify-center">
+            <p className="text-lg font-medium mb-1">Net Savings</p>
+            <p className="text-3xl font-bold">
+              {formatCurrency(
+                incomeData.reduce((sum, item) => sum + item.Amount, 0) -
+                expenseData.reduce((sum, item) => sum + item.Amount, 0)
+              )}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Calendar View (conditionally rendered) */}
+      {showCalendarView && (
+        <DailySpendingCalendar expenseData={filteredExpenses} />
+      )}
+
       {/* Dashboard content */}
       <Tabs defaultValue="overview">
         <TabsList className="mb-4">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="details">Detailed Analysis</TabsTrigger>
+          <TabsTrigger value="yearly">Yearly & Cash Flow</TabsTrigger>
         </TabsList>
         
         <TabsContent value="overview" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <IncomeVsExpenseChart 
-              incomeData={incomeData} 
-              expenseData={selectedCategory ? filteredExpenses : expenseData} 
-            />
+          <div className="grid grid-cols-1 gap-6">
             <ExpensePieChart 
               expenseData={selectedCategory ? filteredExpenses : expenseData} 
               onCategoryClick={handleCategoryClick}
             />
           </div>
           
-          <MonthlyTrendChart 
-            incomeData={incomeData} 
-            expenseData={selectedCategory ? filteredExpenses : expenseData} 
-          />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <IncomeVsExpenseChart 
+              incomeData={incomeData} 
+              expenseData={selectedCategory ? filteredExpenses : expenseData} 
+            />
+            <MonthlyTrendChart 
+              incomeData={incomeData} 
+              expenseData={selectedCategory ? filteredExpenses : expenseData} 
+            />
+          </div>
         </TabsContent>
         
         <TabsContent value="details" className="space-y-6">
@@ -277,6 +348,19 @@ const FinanceDashboard: React.FC<FinanceDashboardProps> = ({ incomeData, expense
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+        
+        <TabsContent value="yearly" className="space-y-6">
+          <div className="grid grid-cols-1 gap-6">
+            <YearlySummaryChart 
+              incomeData={incomeData} 
+              expenseData={expenseData} 
+            />
+            <CashFlowChart 
+              incomeData={incomeData} 
+              expenseData={expenseData} 
+            />
+          </div>
         </TabsContent>
       </Tabs>
     </div>

@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-import { ExpenseData, groupExpensesByCategory } from '@/utils/dataProcessing';
+import { ExpenseData, groupExpensesByCategory, formatCurrency } from '@/utils/dataProcessing';
 
 interface ExpensePieChartProps {
   expenseData: ExpenseData[];
@@ -35,18 +35,9 @@ const ExpensePieChart: React.FC<ExpensePieChartProps> = ({ expenseData, onCatego
     '#F3722C', '#F8961E', '#F9C74F', '#90BE6D', '#43AA8B',
   ];
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(value);
-  };
-
-  const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }: any) => {
+  const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, name }: any) => {
     const RADIAN = Math.PI / 180;
-    const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+    const radius = innerRadius + (outerRadius - innerRadius) * 0.7;
     const x = cx + radius * Math.cos(-midAngle * RADIAN);
     const y = cy + radius * Math.sin(-midAngle * RADIAN);
 
@@ -58,6 +49,7 @@ const ExpensePieChart: React.FC<ExpensePieChartProps> = ({ expenseData, onCatego
         textAnchor={x > cx ? 'start' : 'end'}
         dominantBaseline="central"
         fontSize="12"
+        fontWeight="bold"
       >
         {`${(percent * 100).toFixed(0)}%`}
       </text>
@@ -65,12 +57,12 @@ const ExpensePieChart: React.FC<ExpensePieChartProps> = ({ expenseData, onCatego
   };
 
   return (
-    <Card className="animate-slide-in" style={{ animationDelay: '0.2s' }}>
+    <Card className="animate-slide-in col-span-1 lg:col-span-2" style={{ animationDelay: '0.2s' }}>
       <CardHeader>
         <CardTitle>Expense Breakdown by Category</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="h-80">
+        <div className="h-96">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
@@ -79,10 +71,12 @@ const ExpensePieChart: React.FC<ExpensePieChartProps> = ({ expenseData, onCatego
                 cy="50%"
                 labelLine={false}
                 label={renderCustomizedLabel}
-                outerRadius={80}
+                outerRadius={120}
+                innerRadius={50}
                 fill="#8884d8"
                 dataKey="value"
                 onClick={handlePieClick}
+                paddingAngle={2}
               >
                 {chartData.map((entry, index) => (
                   <Cell 
@@ -97,7 +91,12 @@ const ExpensePieChart: React.FC<ExpensePieChartProps> = ({ expenseData, onCatego
                 formatter={(value: number) => [formatCurrency(value), 'Amount']}
                 contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.9)', borderRadius: '8px' }}
               />
-              <Legend />
+              <Legend 
+                layout="vertical" 
+                align="right" 
+                verticalAlign="middle"
+                wrapperStyle={{ paddingLeft: '20px' }}
+              />
             </PieChart>
           </ResponsiveContainer>
         </div>
