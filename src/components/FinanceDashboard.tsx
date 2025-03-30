@@ -3,7 +3,12 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { IncomeData, ExpenseData, filterExpensesByCategory, formatCurrency } from '@/utils/finance';
+import { 
+  IncomeData, 
+  ExpenseData, 
+  filterExpensesByCategory, 
+  formatCurrency 
+} from '@/utils/finance';
 import IncomeVsExpenseChart from './charts/IncomeVsExpenseChart';
 import ExpensePieChart from './charts/ExpensePieChart';
 import MonthlyTrendChart from './charts/MonthlyTrendChart';
@@ -11,12 +16,29 @@ import TopSpendingChart from './charts/TopSpendingChart';
 import CashFlowChart from './charts/CashFlowChart';
 import YearlySummaryChart from './charts/YearlySummaryChart';
 import DailySpendingCalendar from './charts/DailySpendingCalendar';
+import CumulativeSavingsChart from './charts/CumulativeSavingsChart';
 import TransactionTable from './TransactionTable';
-import { CalendarDays, Download, Filter, Search } from 'lucide-react';
+import { 
+  CalendarDays, 
+  Download, 
+  Filter, 
+  Search, 
+  FileDown, 
+  Calendar
+} from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogDescription, 
+  DialogFooter,
+  DialogTrigger
+} from '@/components/ui/dialog';
 import generateReport from '@/utils/reportGenerator';
 
 interface FinanceDashboardProps {
@@ -27,10 +49,12 @@ interface FinanceDashboardProps {
 const FinanceDashboard: React.FC<FinanceDashboardProps> = ({ incomeData, expenseData }) => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [filteredExpenses, setFilteredExpenses] = useState<ExpenseData[]>(expenseData);
+  const [filteredIncomes, setFilteredIncomes] = useState<IncomeData[]>(incomeData);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedYear, setSelectedYear] = useState<string>('all');
   const [selectedMonth, setSelectedMonth] = useState<string>('all');
   const [showCalendarView, setShowCalendarView] = useState(false);
+  const [reportYear, setReportYear] = useState<number>(new Date().getFullYear());
   const { toast } = useToast();
 
   // Get unique years from data
@@ -71,11 +95,14 @@ const FinanceDashboard: React.FC<FinanceDashboardProps> = ({ incomeData, expense
     
     if (!query) {
       setFilteredExpenses(expenseData);
+      setFilteredIncomes(incomeData);
       return;
     }
     
     const lowercaseQuery = query.toLowerCase();
-    const filtered = expenseData.filter((expense) => {
+    
+    // Filter expenses
+    const filteredExp = expenseData.filter((expense) => {
       return (
         expense.Name.toLowerCase().includes(lowercaseQuery) ||
         expense.Categories.toLowerCase().includes(lowercaseQuery) ||
@@ -83,7 +110,16 @@ const FinanceDashboard: React.FC<FinanceDashboardProps> = ({ incomeData, expense
       );
     });
     
-    setFilteredExpenses(filtered);
+    // Filter incomes
+    const filteredInc = incomeData.filter((income) => {
+      return (
+        income.Name.toLowerCase().includes(lowercaseQuery) ||
+        income.Sources.toLowerCase().includes(lowercaseQuery)
+      );
+    });
+    
+    setFilteredExpenses(filteredExp);
+    setFilteredIncomes(filteredInc);
   };
 
   // Handle year filter
@@ -100,36 +136,49 @@ const FinanceDashboard: React.FC<FinanceDashboardProps> = ({ incomeData, expense
 
   // Apply combined filters
   const applyFilters = (year: string, month: string) => {
-    let filtered = [...expenseData];
+    // Filter expenses
+    let filteredExp = [...expenseData];
+    let filteredInc = [...incomeData];
     
     // Apply year filter if not "all"
     if (year !== 'all') {
-      filtered = filtered.filter((expense) => expense.year?.toString() === year);
+      filteredExp = filteredExp.filter((expense) => expense.year?.toString() === year);
+      filteredInc = filteredInc.filter((income) => income.year?.toString() === year);
     }
     
     // Apply month filter if not "all"
     if (month !== 'all') {
-      filtered = filtered.filter((expense) => expense.month?.toString() === month);
+      filteredExp = filteredExp.filter((expense) => expense.month?.toString() === month);
+      filteredInc = filteredInc.filter((income) => income.month?.toString() === month);
     }
     
     // Apply category filter if selected
     if (selectedCategory) {
-      filtered = filtered.filter((expense) => expense.Categories === selectedCategory);
+      filteredExp = filteredExp.filter((expense) => expense.Categories === selectedCategory);
     }
     
     // Apply search filter if there's a query
     if (searchQuery) {
       const lowercaseQuery = searchQuery.toLowerCase();
-      filtered = filtered.filter((expense) => {
+      
+      filteredExp = filteredExp.filter((expense) => {
         return (
           expense.Name.toLowerCase().includes(lowercaseQuery) ||
           expense.Categories.toLowerCase().includes(lowercaseQuery) ||
           expense.Notes.toLowerCase().includes(lowercaseQuery)
         );
       });
+      
+      filteredInc = filteredInc.filter((income) => {
+        return (
+          income.Name.toLowerCase().includes(lowercaseQuery) ||
+          income.Sources.toLowerCase().includes(lowercaseQuery)
+        );
+      });
     }
     
-    setFilteredExpenses(filtered);
+    setFilteredExpenses(filteredExp);
+    setFilteredIncomes(filteredInc);
   };
 
   // Reset all filters
@@ -139,15 +188,16 @@ const FinanceDashboard: React.FC<FinanceDashboardProps> = ({ incomeData, expense
     setSelectedYear('all');
     setSelectedMonth('all');
     setFilteredExpenses(expenseData);
+    setFilteredIncomes(incomeData);
   };
 
   // Handle report generation
   const handleGenerateReport = () => {
     try {
-      generateReport(incomeData, expenseData);
+      generateReport(incomeData, expenseData, reportYear);
       toast({
         title: "Report Generated",
-        description: "Your financial report has been downloaded successfully.",
+        description: `Your financial report for ${reportYear} has been downloaded successfully.`,
       });
     } catch (error) {
       console.error("Error generating report:", error);
@@ -233,10 +283,46 @@ const FinanceDashboard: React.FC<FinanceDashboardProps> = ({ incomeData, expense
             </div>
             
             <div className="flex items-end">
-              <Button onClick={handleGenerateReport} className="w-full">
-                <Download className="mr-2 h-4 w-4" />
-                Download Report
-              </Button>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button className="w-full">
+                    <Download className="mr-2 h-4 w-4" />
+                    Download Report
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Generate Financial Report</DialogTitle>
+                    <DialogDescription>
+                      Select a year to generate a detailed financial report.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="py-4">
+                    <Label htmlFor="report-year" className="mb-2 block">Year</Label>
+                    <Select 
+                      value={reportYear.toString()} 
+                      onValueChange={(value) => setReportYear(parseInt(value))}
+                    >
+                      <SelectTrigger id="report-year">
+                        <SelectValue placeholder="Select Year" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {years.map((year) => (
+                          <SelectItem key={`report-${year}`} value={year}>
+                            {year}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <DialogFooter>
+                    <Button onClick={handleGenerateReport}>
+                      <FileDown className="mr-2 h-4 w-4" />
+                      Generate Report
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
             </div>
           </div>
           
@@ -262,7 +348,7 @@ const FinanceDashboard: React.FC<FinanceDashboardProps> = ({ incomeData, expense
           <CardContent className="p-6 flex flex-col items-center justify-center">
             <p className="text-lg font-medium mb-1">Total Income</p>
             <p className="text-3xl font-bold">
-              {formatCurrency(incomeData.reduce((sum, item) => sum + item.Amount, 0))}
+              {formatCurrency(filteredIncomes.reduce((sum, item) => sum + item.Amount, 0))}
             </p>
           </CardContent>
         </Card>
@@ -270,7 +356,7 @@ const FinanceDashboard: React.FC<FinanceDashboardProps> = ({ incomeData, expense
           <CardContent className="p-6 flex flex-col items-center justify-center">
             <p className="text-lg font-medium mb-1">Total Expenses</p>
             <p className="text-3xl font-bold">
-              {formatCurrency(expenseData.reduce((sum, item) => sum + item.Amount, 0))}
+              {formatCurrency(filteredExpenses.reduce((sum, item) => sum + item.Amount, 0))}
             </p>
           </CardContent>
         </Card>
@@ -279,8 +365,8 @@ const FinanceDashboard: React.FC<FinanceDashboardProps> = ({ incomeData, expense
             <p className="text-lg font-medium mb-1">Net Savings</p>
             <p className="text-3xl font-bold">
               {formatCurrency(
-                incomeData.reduce((sum, item) => sum + item.Amount, 0) -
-                expenseData.reduce((sum, item) => sum + item.Amount, 0)
+                filteredIncomes.reduce((sum, item) => sum + item.Amount, 0) -
+                filteredExpenses.reduce((sum, item) => sum + item.Amount, 0)
               )}
             </p>
           </CardContent>
@@ -298,36 +384,37 @@ const FinanceDashboard: React.FC<FinanceDashboardProps> = ({ incomeData, expense
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="details">Detailed Analysis</TabsTrigger>
           <TabsTrigger value="yearly">Yearly & Cash Flow</TabsTrigger>
+          <TabsTrigger value="cumulative">Cumulative Savings</TabsTrigger>
           <TabsTrigger value="transactions">Transactions</TabsTrigger>
         </TabsList>
         
         <TabsContent value="overview" className="space-y-6">
           <div className="grid grid-cols-1 gap-6">
             <ExpensePieChart 
-              expenseData={selectedCategory ? filteredExpenses : expenseData} 
+              expenseData={selectedCategory ? filteredExpenses : filteredExpenses} 
               onCategoryClick={handleCategoryClick}
             />
           </div>
           
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <IncomeVsExpenseChart 
-              incomeData={incomeData} 
-              expenseData={selectedCategory ? filteredExpenses : expenseData} 
+              incomeData={filteredIncomes} 
+              expenseData={filteredExpenses} 
             />
           </div>
           
           {/* Monthly Trend Chart in its own row at full width */}
           <div className="grid grid-cols-1 gap-6">
             <MonthlyTrendChart 
-              incomeData={incomeData} 
-              expenseData={selectedCategory ? filteredExpenses : expenseData} 
+              incomeData={filteredIncomes} 
+              expenseData={filteredExpenses} 
             />
           </div>
         </TabsContent>
         
         <TabsContent value="details" className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <TopSpendingChart expenseData={selectedCategory ? filteredExpenses : expenseData} />
+            <TopSpendingChart expenseData={filteredExpenses} />
             
             {/* Placeholder for additional charts to be added in the future */}
             <Card className="animate-slide-in" style={{ animationDelay: '0.5s' }}>
@@ -354,10 +441,39 @@ const FinanceDashboard: React.FC<FinanceDashboardProps> = ({ incomeData, expense
           </div>
         </TabsContent>
         
+        <TabsContent value="cumulative" className="space-y-6">
+          <div className="grid grid-cols-1 gap-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-medium">Year</h3>
+              <Select 
+                value={selectedYear === 'all' ? (new Date().getFullYear().toString()) : selectedYear} 
+                onValueChange={(value) => setSelectedYear(value)}
+              >
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Select Year" />
+                </SelectTrigger>
+                <SelectContent>
+                  {years.map((year) => (
+                    <SelectItem key={`cumulative-${year}`} value={year}>
+                      {year}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <CumulativeSavingsChart 
+              incomeData={incomeData} 
+              expenseData={expenseData}
+              year={parseInt(selectedYear === 'all' ? new Date().getFullYear().toString() : selectedYear)} 
+            />
+          </div>
+        </TabsContent>
+        
         <TabsContent value="transactions" className="space-y-6">
           <TransactionTable 
-            incomeData={incomeData} 
-            expenseData={expenseData} 
+            incomeData={filteredIncomes} 
+            expenseData={filteredExpenses} 
           />
         </TabsContent>
       </Tabs>

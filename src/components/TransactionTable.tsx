@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { IncomeData, ExpenseData, formatCurrency } from '@/utils/finance';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -33,8 +33,8 @@ const TransactionTable: React.FC<TransactionTableProps> = ({ incomeData, expense
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
 
-  // Combine income and expense data into a single array
-  const allTransactions: Transaction[] = [
+  // Combine income and expense data into a single array - wrapped in useMemo to avoid recalculations
+  const allTransactions = useMemo<Transaction[]>(() => [
     ...incomeData.map((income): Transaction => ({
       id: `income-${income.Name}-${income.Date.getTime()}`,
       type: 'income',
@@ -55,48 +55,52 @@ const TransactionTable: React.FC<TransactionTableProps> = ({ incomeData, expense
       formattedDate: expense.formattedDate || expense.Date.toLocaleDateString(),
       notes: expense.Notes,
     })),
-  ];
+  ], [incomeData, expenseData]);
 
-  // Apply filters
-  const filteredTransactions = allTransactions.filter(transaction => {
-    // Apply type filter
-    if (typeFilter !== 'all' && transaction.type !== typeFilter) {
-      return false;
-    }
+  // Apply filters with useMemo to avoid recalculations
+  const filteredTransactions = useMemo(() => {
+    return allTransactions.filter(transaction => {
+      // Apply type filter
+      if (typeFilter !== 'all' && transaction.type !== typeFilter) {
+        return false;
+      }
 
-    // Apply search filter
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      return (
-        transaction.name.toLowerCase().includes(query) ||
-        transaction.category.toLowerCase().includes(query) ||
-        (transaction.notes && transaction.notes.toLowerCase().includes(query))
-      );
-    }
+      // Apply search filter
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        return (
+          transaction.name.toLowerCase().includes(query) ||
+          transaction.category.toLowerCase().includes(query) ||
+          (transaction.notes && transaction.notes.toLowerCase().includes(query))
+        );
+      }
 
-    return true;
-  });
+      return true;
+    });
+  }, [allTransactions, typeFilter, searchQuery]);
 
-  // Apply sorting
-  const sortedTransactions = [...filteredTransactions].sort((a, b) => {
-    if (sortField === 'date') {
-      return sortDirection === 'asc'
-        ? a.date.getTime() - b.date.getTime()
-        : b.date.getTime() - a.date.getTime();
-    } else if (sortField === 'amount') {
-      return sortDirection === 'asc'
-        ? a.amount - b.amount
-        : b.amount - a.amount;
-    } else {
-      const aValue = String(a[sortField]).toLowerCase();
-      const bValue = String(b[sortField]).toLowerCase();
-      return sortDirection === 'asc'
-        ? aValue.localeCompare(bValue)
-        : bValue.localeCompare(aValue);
-    }
-  });
+  // Apply sorting with useMemo to avoid recalculations
+  const sortedTransactions = useMemo(() => {
+    return [...filteredTransactions].sort((a, b) => {
+      if (sortField === 'date') {
+        return sortDirection === 'asc'
+          ? a.date.getTime() - b.date.getTime()
+          : b.date.getTime() - a.date.getTime();
+      } else if (sortField === 'amount') {
+        return sortDirection === 'asc'
+          ? a.amount - b.amount
+          : b.amount - a.amount;
+      } else {
+        const aValue = String(a[sortField]).toLowerCase();
+        const bValue = String(b[sortField]).toLowerCase();
+        return sortDirection === 'asc'
+          ? aValue.localeCompare(bValue)
+          : bValue.localeCompare(aValue);
+      }
+    });
+  }, [filteredTransactions, sortField, sortDirection]);
 
-  // Paginate
+  // Calculate pagination values
   const totalPages = Math.ceil(sortedTransactions.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedTransactions = sortedTransactions.slice(startIndex, startIndex + itemsPerPage);
@@ -125,6 +129,11 @@ const TransactionTable: React.FC<TransactionTableProps> = ({ incomeData, expense
       </Button>
     );
   }
+
+  // Reset to first page when filters change
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, typeFilter, sortField, sortDirection]);
 
   // Column headers with sort indicators
   const SortHeader = ({ field, label }: { field: keyof Transaction; label: string }) => (
@@ -195,14 +204,14 @@ const TransactionTable: React.FC<TransactionTableProps> = ({ incomeData, expense
                 <TableRow key={transaction.id}>
                   <TableCell>
                     <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
-                      transaction.type === 'income' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                      transaction.type === 'income' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
                     }`}>
                       {transaction.type === 'income' ? 'Income' : 'Expense'}
                     </span>
                   </TableCell>
                   <TableCell>{transaction.name}</TableCell>
                   <TableCell>{transaction.category}</TableCell>
-                  <TableCell className={transaction.type === 'income' ? 'text-green-600' : 'text-red-600'}>
+                  <TableCell className={transaction.type === 'income' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
                     {formatCurrency(transaction.amount)}
                   </TableCell>
                   <TableCell>{transaction.formattedDate}</TableCell>

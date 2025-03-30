@@ -11,16 +11,28 @@ import {
   getTopSpendingCategories,
   getNotableTransactions,
   getYearlySummary,
+  filterByDateRange,
 } from './finance';
 
-export const generateReport = (incomeData: IncomeData[], expenseData: ExpenseData[]): void => {
+export const generateReport = (
+  incomeData: IncomeData[], 
+  expenseData: ExpenseData[],
+  year: number = new Date().getFullYear()
+): void => {
+  // Filter data for the selected year
+  const startDate = new Date(year, 0, 1);
+  const endDate = new Date(year, 11, 31, 23, 59, 59);
+  
+  const yearIncomeData = filterByDateRange(incomeData, startDate, endDate);
+  const yearExpenseData = filterByDateRange(expenseData, startDate, endDate);
+  
   // Initialize PDF document
   const doc = new jsPDF();
-  const totalIncome = calculateTotalIncome(incomeData);
-  const totalExpenses = calculateTotalExpenses(expenseData);
+  const totalIncome = calculateTotalIncome(yearIncomeData);
+  const totalExpenses = calculateTotalExpenses(yearExpenseData);
   const netSavings = calculateNetSavings(totalIncome, totalExpenses);
-  const topCategories = getTopSpendingCategories(expenseData);
-  const notableTransactions = getNotableTransactions(incomeData, expenseData);
+  const topCategories = getTopSpendingCategories(yearExpenseData);
+  const notableTransactions = getNotableTransactions(yearIncomeData, yearExpenseData);
   const yearlySummary = getYearlySummary(incomeData, expenseData);
 
   // Helper function to add a section title
@@ -36,7 +48,7 @@ export const generateReport = (incomeData: IncomeData[], expenseData: ExpenseDat
   // Add header
   doc.setFontSize(22);
   doc.setTextColor(33, 33, 33);
-  doc.text('Financial Report', 105, 20, { align: 'center' });
+  doc.text(`Financial Report - ${year}`, 105, 20, { align: 'center' });
   doc.setFontSize(12);
   doc.setTextColor(100, 100, 100);
   doc.text(`Generated on ${new Date().toLocaleDateString()}`, 105, 28, { align: 'center' });
@@ -129,25 +141,18 @@ export const generateReport = (incomeData: IncomeData[], expenseData: ExpenseDat
     headStyles: { fillColor: [66, 66, 66] }
   });
 
-  // Monthly breakdown of current/latest year
+  // Monthly breakdown of selected year
   const yearlyTableEndY = (doc as any).lastAutoTable.finalY + 15;
   
-  // Find the latest year with data
-  const latestYear = Math.max(...yearlySummary.map(item => item.year));
+  addSectionTitle(`Monthly Breakdown (${year})`, yearlyTableEndY);
   
-  addSectionTitle(`Monthly Breakdown (${latestYear})`, yearlyTableEndY);
-  
-  // Filter data for the latest year
-  const currentYearIncome = incomeData.filter(item => item.year === latestYear);
-  const currentYearExpenses = expenseData.filter(item => item.year === latestYear);
-  
-  // Group by month
+  // Group by month for the selected year
   const monthlyData = Array.from({ length: 12 }, (_, i) => {
-    const monthIncome = currentYearIncome
+    const monthIncome = yearIncomeData
       .filter(item => item.month === i)
       .reduce((sum, item) => sum + item.Amount, 0);
       
-    const monthExpenses = currentYearExpenses
+    const monthExpenses = yearExpenseData
       .filter(item => item.month === i)
       .reduce((sum, item) => sum + item.Amount, 0);
       
@@ -155,7 +160,7 @@ export const generateReport = (incomeData: IncomeData[], expenseData: ExpenseDat
     const savingsRate = monthIncome > 0 ? (savings / monthIncome * 100).toFixed(1) + '%' : 'N/A';
     
     return [
-      new Date(latestYear, i).toLocaleString('default', { month: 'long' }),
+      new Date(year, i).toLocaleString('default', { month: 'long' }),
       formatCurrency(monthIncome),
       formatCurrency(monthExpenses),
       formatCurrency(savings),
@@ -170,6 +175,58 @@ export const generateReport = (incomeData: IncomeData[], expenseData: ExpenseDat
     theme: 'grid',
     styles: { fontSize: 9 },
     headStyles: { fillColor: [66, 66, 66] }
+  });
+
+  // Add all transactions for the selected year
+  doc.addPage();
+  
+  // Income transactions
+  addSectionTitle(`All Income Transactions (${year})`, 20);
+  const allIncomeData = yearIncomeData.map((item, index) => [
+    `${index + 1}`,
+    item.Name,
+    item.Sources,
+    formatCurrency(item.Amount),
+    item.formattedDate || new Date(item.Date).toLocaleDateString()
+  ]);
+  
+  autoTable(doc, {
+    startY: 30,
+    head: [['#', 'Name', 'Source', 'Amount', 'Date']],
+    body: allIncomeData,
+    theme: 'grid',
+    styles: { fontSize: 8 },
+    headStyles: { fillColor: [71, 129, 81] }
+  });
+  
+  // Expense transactions (on a new page if needed)
+  const incomeAllTableEndY = (doc as any).lastAutoTable.finalY + 15;
+  
+  if (incomeAllTableEndY > doc.internal.pageSize.height - 40) {
+    doc.addPage();
+    addSectionTitle(`All Expense Transactions (${year})`, 20);
+    var startY = 30;
+  } else {
+    addSectionTitle(`All Expense Transactions (${year})`, incomeAllTableEndY);
+    var startY = incomeAllTableEndY + 10;
+  }
+  
+  const allExpenseData = yearExpenseData.map((item, index) => [
+    `${index + 1}`,
+    item.Name,
+    item.Categories,
+    formatCurrency(item.Amount),
+    item.formattedDate || new Date(item.Date).toLocaleDateString(),
+    item.Notes
+  ]);
+  
+  autoTable(doc, {
+    startY,
+    head: [['#', 'Name', 'Category', 'Amount', 'Date', 'Notes']],
+    body: allExpenseData,
+    theme: 'grid',
+    styles: { fontSize: 8 },
+    headStyles: { fillColor: [200, 70, 70] }
   });
 
   // Add footer
@@ -192,7 +249,7 @@ export const generateReport = (incomeData: IncomeData[], expenseData: ExpenseDat
   }
 
   // Save the PDF
-  doc.save('financial-report.pdf');
+  doc.save(`financial-report-${year}.pdf`);
 };
 
 export default generateReport;
