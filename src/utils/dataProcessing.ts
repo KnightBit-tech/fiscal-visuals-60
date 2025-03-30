@@ -1,4 +1,3 @@
-
 export interface IncomeData {
   Name: string;
   Sources: string;
@@ -22,13 +21,20 @@ export interface ExpenseData {
 }
 
 /**
- * Clean text by removing markdown links
- * @param text Input text that may contain markdown links
- * @returns Plain text without markdown links
+ * Clean text by removing markdown links and parenthetical URLs
+ * @param text Input text that may contain markdown links or URLs in parentheses
+ * @returns Plain text without markdown links or parenthetical content
  */
 export const cleanMarkdownLinks = (text: string): string => {
-  // Replace markdown links [text](url) with just 'text'
-  return text ? text.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1').trim() : '';
+  if (!text) return '';
+  
+  // First handle standard markdown links [text](url)
+  let cleaned = text.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1').trim();
+  
+  // Then handle text followed by parentheses with URL-like content: Text (URL)
+  cleaned = cleaned.replace(/(.+?)\s*\([^)]*%[^)]*\)/g, '$1').trim();
+  
+  return cleaned;
 };
 
 /**
